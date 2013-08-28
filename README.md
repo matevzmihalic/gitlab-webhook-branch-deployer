@@ -4,31 +4,38 @@ Clones and maintains directories with the latest contents of a branch.
 
 ### Usage
 
-```$ ./gitlab-webhook.py --port 8000 git@github.com:vinodc/gitlab-webhook-branch-deployer.git /home/vinod/gwbd```
+# gitlab-webhook.ini
 
-This will run the process and listen on port 8000 for POST requests from Gitlab that correspond to the repository ```vinodc/gitlab-webhook-branch-deployer```. When it receives a request, it will clone the branches that were
-indicated as having been updated to the directory ```/home/vinod/gwbd```.
+```$ ./gitlab-webhook.py```
+
+# Run the listening script:
+
+```
+[SYSTEM_CONFIGURATION]
+WebhookHost	= example.com
+WebhookPort	= 8040
+
+[testproject]
+Repository	= git@mygitlabdomain.com:user/testproject.git
+BranchName	= dev
+BranchDir	= /path/to/testproject/folder
+
+[greatproject]
+Repository	= git@mygitlabdomain.com:user/testproject.git
+BranchName	= master
+BranchDir	= /path/to/greatproject/folder
+```
+
+This will run the process and listen on port 8040 for POST requests from Gitlab that correspond to the two configs.
 
 It will ignore any branch with a '/' in it's name. This is intentional, to allow for feature branches or similar that will not be cloned.
 
-For help: ```$ ./gitlab-webhook.py -h```
-
 ### Deployment
 
-I recommend using http://supervisord.org/ or similar to run the script. For the sake of completion, here are the contents of my supervisord conf.d file:
-
-/etc/supervisor/conf.d/gitlab-webhook.conf
-```
-command=/usr/bin/env python /opt/githooks/deployer/gitlab-webhook.py --port 8001 git@github.com:vinodc/gitlab-webhook-branch-deployer.git /opt/githooks/gwbd
-directory=/opt/githooks/deployer
-user=deployer
-numprocs=1
-autostart=true
-process_name=%(program_name)s-%(process_num)02d
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/supervisor/%(program_name)s-%(process_num)s-stdout.log
-```
+#Create a webhook records in Gitlab for these configurations:
+```http://examle.com:8040/testproject```
+and
+```http://examle.com:8040/greatproject```
 
 ### Acknowledgements
 

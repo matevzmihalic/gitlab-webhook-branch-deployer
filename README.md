@@ -4,11 +4,11 @@ Clones and maintains directories with the latest contents of a branch.
 
 ### Usage
 
-# gitlab-webhook.ini
+##### gitlab-webhook.ini
 
 ```$ ./gitlab-webhook.py```
 
-# Run the listening script:
+##### Run the listening script:
 
 ```
 [SYSTEM_CONFIGURATION]
@@ -32,7 +32,7 @@ It will ignore any branch with a '/' in it's name. This is intentional, to allow
 
 ### Deployment
 
-#Create a webhook records in Gitlab for these configurations:
+#####Create a webhook records in Gitlab for these configurations:
 ```http://examle.com:8040/testproject```
 and
 ```http://examle.com:8040/greatproject```

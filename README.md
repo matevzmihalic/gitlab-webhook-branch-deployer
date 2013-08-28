@@ -33,9 +33,16 @@ It will ignore any branch with a '/' in it's name. This is intentional, to allow
 ### Deployment
 
 #####Create a webhook records in Gitlab for these configurations:
-```http://examle.com:8040/testproject```
+
+```
+http://examle.com:8040/testproject
+```
+
 and
-```http://examle.com:8040/greatproject```
+
+```
+http://examle.com:8040/greatproject
+```
 
 ### Acknowledgements
 

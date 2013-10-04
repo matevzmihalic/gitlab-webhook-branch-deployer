@@ -18,15 +18,24 @@ logging_handler.setFormatter(
 logger.addHandler(logging_handler)
 
 config = ConfigParser.RawConfigParser()
-config.read('gitlab-webhook.ini')
+config.read('%s/gitlab-webhook.ini' % os.path.dirname(os.path.abspath(__file__)))
+gitlab_ip = config.get('SYSTEM_CONFIGURATION', 'GitlabIP')
+rails_path = config.get('SYSTEM_CONFIGURATION', 'RailsPath')
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	branch_dir = ''
 	repository = ''
+	sudo_user = ''
+	project_id = ''
 
 	def do_POST(self):
 		logger.info("Received POST request.")
+		
 		self.rfile._sock.settimeout(5)
+		
+		if self.client_address[0] != gitlab_ip:
+			logger.info("Wrong request source IP!")
+			return self.error_response()
 		
 		if not self.headers.has_key('Content-Length'):
 			return self.error_response()
@@ -47,6 +56,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			if config.has_section(config_name):
 				self.branch_dir = config.get(config_name, 'BranchDir')
 				self.repository = config.get(config_name, 'Repository')
+				self.sudo_user = config.get(config_name, 'SudoUser')
+				self.project_id = config.get(config_name, 'ProjectId')
 				config_branch_name = config.get(config_name, 'BranchName')
 				
 				if data_repository == self.repository:
@@ -104,10 +115,13 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		if not os.path.isdir(branch_path):
 			return self.add_branch(branch)
 		os.chdir(branch_path)
-		run_command(r"/usr/bin/git checkout -f %s" % branch)
-		run_command(r"/usr/bin/git clean -fdx")
-		run_command(r"/usr/bin/git fetch origin %s" % branch)
-		run_command(r"/usr/bin/git reset --hard FETCH_HEAD")
+		
+ 		run_command(r"sudo -u %(sudouser)s -H /usr/bin/git pull origin %(branch)s" %
+ 					{'branch': branch, "sudouser": self.sudo_user})
+ 		if rails_path != "false" and self.project_id and self.project_id != "false":
+			run_command(""" %(rails_path)s runner "Project.find_by_identifier('%(project)s').try(:repository).try(:fetch_changesets)" -e production """ %
+					{'project': self.project_id, 'rails_path' : rails_path})
+ 					
 		logger.info("Updated branch '%s'" % branch_path)
 		
 	def remove_branch(self, branch):

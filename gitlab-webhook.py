@@ -51,7 +51,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		if len(self.path) > 1:
 			config_name = self.path[1:]
 			if config.has_section(config_name):
-				self.section = config.items(config_name)
+				self.section = dict(config.items(config_name))
 				
 				if data_repository == self.section['repository'] and self.section.has_key('branchname'):
 					branch_to_update = data.get('ref', '').split('refs/heads/')[-1]

@@ -12,23 +12,32 @@ Clones and maintains directories with the latest contents of a branch.
 
 ```
 [SYSTEM_CONFIGURATION]
-WebhookHost	= example.com
+WebhookHost	= localhost
 WebhookPort	= 8040
+GitlabIP	= 127.0.0.1
+RailsPath	= false
 
 [testproject]
 Repository	= git@mygitlabdomain.com:user/testproject.git
-BranchName	= dev
-BranchDir	= /path/to/testproject/folder
-
-[greatproject]
-Repository	= git@mygitlabdomain.com:user/testproject.git
 BranchName	= master
-BranchDir	= /path/to/greatproject/folder
+BranchDir	= /path/to/master/branch/folder
+SudoUser	= user
+ShBefore	= /path/to/bash/script.sh
+ShAfter		= /path/to/bash/script.sh
+
+[testproject-dev-branch]
+Repository	= git@mygitlabdomain.com:user/testproject.git
+BranchName	= dev
+BranchDir	= /path/to/dev/branch/folder
+SudoUser	= user
+ProjectId	= 1234
 ```
 
 This will run the process and listen on port 8040 for POST requests from Gitlab that correspond to the two configs.
 
 It will ignore any branch with a '/' in it's name. This is intentional, to allow for feature branches or similar that will not be cloned.
+
+Git pull is running under SudoUser from config file and runs ShBefore script before pulling and ShAfter right after.
 
 ### Deployment
 

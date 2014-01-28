@@ -23,10 +23,7 @@ gitlab_ip = config.get('SYSTEM_CONFIGURATION', 'GitlabIP')
 rails_path = config.get('SYSTEM_CONFIGURATION', 'RailsPath')
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-	branch_dir = ''
-	repository = ''
-	sudo_user = ''
-	project_id = ''
+	section = None
 
 	def do_POST(self):
 		logger.info("Received POST request.")
@@ -54,13 +51,9 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		if len(self.path) > 1:
 			config_name = self.path[1:]
 			if config.has_section(config_name):
-				self.branch_dir = config.get(config_name, 'BranchDir')
-				self.repository = config.get(config_name, 'Repository')
-				self.sudo_user = config.get(config_name, 'SudoUser')
-				self.project_id = config.get(config_name, 'ProjectId')
-				config_branch_name = config.get(config_name, 'BranchName')
+				self.section = config.items(config_name)
 				
-				if data_repository == self.repository:
+				if data_repository == self.section['repository'] and self.section.has_key('branchname'):
 					branch_to_update = data.get('ref', '').split('refs/heads/')[-1]
 					branch_to_update = branch_to_update.replace('; ', '')
 					if branch_to_update == '':
@@ -73,7 +66,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						logger.debug("Skipping update for branch '%s'." %
 									 branch_to_update)
 					else:
-						if branch_to_update == config_branch_name:
+						if branch_to_update == self.section['branchname']:
 							self.ok_response()
 							branch_deletion = data['after'].replace('0', '') == ''
 							branch_addition = data['before'].replace('0', '') == ''
@@ -86,10 +79,10 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 							return 
 						else:
 							logger.debug(("Branch '%s' is not our branch '%s'. "
-										  "Ignoring.") % (branch_to_update, config_branch_name))
+										  "Ignoring.") % (branch_to_update, self.section['branchname']))
 				else:
 					logger.debug(("Repository '%s' is not our repository '%s'. "
-								  "Ignoring.") % (data_repository, self.repository))
+								  "Ignoring.") % (data_repository, self.section['repository']))
 			else:
 				logger.debug(("There is no config with name '%s'. "
 							  "Ignoring.") % (config_name))
@@ -101,31 +94,55 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		logger.info("Finished processing POST request.")
 
 	def add_branch(self, branch):
-		os.chdir(self.branch_dir)
-		branch_path = self.branch_dir
+		if not self.section.has_key('branchdir'):
+			return
+		branch_path = self.section['branchdir']
+
+		os.chdir(branch_path)
+
 		if os.path.isdir(branch_path):
 			return self.update_branch(branch_path)
 		run_command(r"/usr/bin/git clone --depth 1 -o origin -b %s %s %s" %
-					(branch, self.repository, branch))
+					(branch, self.section['repository'], branch))
 		os.chmod(branch_path, 0770)
 		logger.info("Added directory '%s'" % branch_path)
 
 	def update_branch(self, branch):
-		branch_path = self.branch_dir
+		if not self.section.has_key('branchdir'):
+			return
+		branch_path = self.section['branchdir']
+
 		if not os.path.isdir(branch_path):
 			return self.add_branch(branch)
 		os.chdir(branch_path)
 		
+		if not self.section.has_key('sudouser'):
+			return
+
+		# Run bash script before doing pull
+		if self.section.has_key('shbefore'):
+			run_command(r"sudo -u %(sudouser)s -H %(script)s" %	{'script': self.section['shbefore'], "sudouser": self.section['sudouser']})
+
+		# git pull!
  		run_command(r"sudo -u %(sudouser)s -H /usr/bin/git pull origin %(branch)s" %
- 					{'branch': branch, "sudouser": self.sudo_user})
- 		if rails_path != "false" and self.project_id and self.project_id != "false":
+ 					{'branch': branch, "sudouser": self.section['sudouser']})
+
+		# Run bash script after doing pull
+		if self.section.has_key('shafter'):
+			run_command(r"sudo -u %(sudouser)s -H %(script)s" %	{'script': self.section['shafter'], "sudouser": self.section['sudouser']})
+
+		# Updating redmine storage
+ 		if rails_path != "false" and self.section.has_key('projectid') and self.section['projectid'] != "false":
 			run_command(""" %(rails_path)s runner "Project.find_by_identifier('%(project)s').try(:repository).try(:fetch_changesets)" -e production """ %
-					{'project': self.project_id, 'rails_path' : rails_path})
+					{'project': self.section['projectid'], 'rails_path' : rails_path})
  					
 		logger.info("Updated branch '%s'" % branch_path)
 		
 	def remove_branch(self, branch):
-		branch_path = self.branch_dir
+		if not self.section.has_key('branchdir'):
+			return
+		branch_path = self.section['branchdir']
+
 		if not os.path.isdir(branch_path):
 			logger.warn("Directory to remove does not exist: %s" % branch_path)
 			return

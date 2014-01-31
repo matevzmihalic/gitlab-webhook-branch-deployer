@@ -121,7 +121,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 		# Run bash script before doing pull
 		if self.section.has_key('shbefore'):
-			run_command(r"sudo -i -H -u %(sudouser)s -H %(script)s" %	{'script': self.section['shbefore'], "sudouser": self.section['sudouser']})
+			run_command(r"sudo -i -H -u %(sudouser)s %(script)s" %	{'script': self.section['shbefore'], "sudouser": self.section['sudouser']})
 
 		# git pull!
  		run_command(r"sudo -H -u %(sudouser)s /usr/bin/git pull origin %(branch)s" %
@@ -129,7 +129,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 		# Run bash script after doing pull
 		if self.section.has_key('shafter'):
-			run_command(r"sudo -i -H -u %(sudouser)s -H %(script)s" %	{'script': self.section['shafter'], "sudouser": self.section['sudouser']})
+			run_command(r"sudo -i -H -u %(sudouser)s %(script)s" %	{'script': self.section['shafter'], "sudouser": self.section['sudouser']})
 
 		# Updating redmine storage
  		if rails_path != "false" and self.section.has_key('projectid') and self.section['projectid'] != "false":

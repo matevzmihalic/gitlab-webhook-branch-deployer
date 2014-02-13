@@ -41,6 +41,20 @@ Git pull is running under SudoUser from config file and runs ShBefore script bef
 
 ### Deployment
 
+I recommend using http://supervisord.org/ or similar to run the script. For the sake of completion, here are the contents of my supervisord conf.d file:
+
+/etc/supervisor/conf.d/gitlab-webhook.conf
+```
+command=/usr/bin/env python /opt/githooks/deployer/gitlab-webhook.py
+directory=/opt/githooks/deployer
+user=deployer
+numprocs=1
+autostart=true
+process_name=%(program_name)s-%(process_num)02d
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/var/log/supervisor/%(program_name)s-%(process_num)s-stdout.log
+```
 #####Create a webhook records in Gitlab for these configurations:
 
 ```

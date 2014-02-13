@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 
 import os
 import json
@@ -116,20 +116,16 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			return self.add_branch(branch)
 		os.chdir(branch_path)
 		
-		if not self.section.has_key('sudouser'):
-			return
-
 		# Run bash script before doing pull
 		if self.section.has_key('shbefore'):
-			run_command(r"sudo -i -H -u %(sudouser)s %(script)s" %	{'script': self.section['shbefore'], "sudouser": self.section['sudouser']})
+			run_command(self.section['shbefore'])
 
 		# git pull!
- 		run_command(r"sudo -H -u %(sudouser)s /usr/bin/git pull origin %(branch)s" %
- 					{'branch': branch, "sudouser": self.section['sudouser']})
+ 		run_command(r"/usr/bin/git pull origin %(branch)s" % {'branch': branch})
 
 		# Run bash script after doing pull
 		if self.section.has_key('shafter'):
-			run_command(r"sudo -i -H -u %(sudouser)s %(script)s" %	{'script': self.section['shafter'], "sudouser": self.section['sudouser']})
+			run_command(self.section['shafter'])
 
 		# Updating redmine storage
  		if rails_path != "false" and self.section.has_key('projectid') and self.section['projectid'] != "false":

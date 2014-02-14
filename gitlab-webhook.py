@@ -164,7 +164,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 def run_command(command, detached=False):
 	logger.debug("Running command: %s" % command)
 	if detached:
-		os.spawnl(os.P_NOWAIT, command)
+		subprocess.call(command, shell=True)
 	else:
 		os.system(command)
 		

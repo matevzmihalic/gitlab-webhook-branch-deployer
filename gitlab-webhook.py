@@ -118,14 +118,14 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 		# Run bash script before doing pull
 		if self.section.has_key('shbefore'):
-			run_command(self.section['shbefore'])
+			run_command(self.section['shbefore'], True)
 
 		# git pull!
  		run_command(r"/usr/bin/git pull origin %(branch)s" % {'branch': branch})
 
 		# Run bash script after doing pull
 		if self.section.has_key('shafter'):
-			run_command(self.section['shafter'])
+			run_command(self.section['shafter'], True)
 
 		# Updating redmine storage
  		if rails_path != "false" and self.section.has_key('projectid') and self.section['projectid'] != "false":
@@ -161,9 +161,12 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.end_headers()
 		
 
-def run_command(command):
+def run_command(command, detached=False):
 	logger.debug("Running command: %s" % command)
-	os.system(command)
+	if detached:
+		os.spawnl(os.P_NOWAIT, command)
+	else:
+		os.system(command)
 		
 def main():
 	host, port = config.get('SYSTEM_CONFIGURATION', 'WebhookHost'), int(config.get('SYSTEM_CONFIGURATION', 'WebhookPort'))
